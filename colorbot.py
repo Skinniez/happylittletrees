@@ -46,28 +46,61 @@ def hue2rgb(p, q, t):
 
 
 # Drawing and Palette Generation Function
+
+
 def generate_palette(color_count, palette_type="random"):
     img = Image.new('RGB', (color_count * 50, 150), color='white')
     draw = ImageDraw.Draw(img)
+    rgb_values = []
 
-    h = random.random()  # Random value between 0 and 1 for hue
-    s = random.uniform(0.4, 0.6)  # Random saturation between 0.4 and 0.6
-    l = random.uniform(0.4, 0.6)  # Random lightness between 0.4 and 0.6
-    
+    h = random.random()  
+    s = random.uniform(0.4, 0.6)  
+    l = random.uniform(0.4, 0.6)  
+
     for i in range(color_count):
-        if palette_type == "complementary":
-            if i == color_count // 2:  # Change to complementary hue at halfway point
+        if palette_type == "random":
+            h = random.random()  
+            s = random.uniform(0.3, 0.7)  
+            l = random.uniform(0.3, 0.7)  
+        elif palette_type == "complementary":
+            if i == color_count // 2:  
                 h = (h + 0.5) % 1
-            s = random.uniform(0.4, 0.6)  # Vary saturation
-            l = random.uniform(0.4, 0.6)  # Vary lightness
+            s = random.uniform(0.4, 0.6)  
+            l = random.uniform(0.4, 0.6)  
         elif palette_type == "monochromatic":
-            l = random.uniform(0.3, 0.7)  # Vary lightness
-            s = random.uniform(0.3, 0.7)  # Vary saturation
+            l = random.uniform(0.3, 0.7)  
+            s = random.uniform(0.3, 0.7)  
+        elif palette_type == "neon":
+            h = random.random()
+            s = random.uniform(0.8, 1.0)  
+            l = random.uniform(0.5, 0.7)  
+        elif palette_type == "pastel":
+            h = random.random()
+            s = random.uniform(0.2, 0.4)  
+            l = random.uniform(0.7, 0.9)  
+        elif palette_type == "analogous":
+            h = (h + 1 / max(1, color_count - 1)) % 1  
+            s = random.uniform(0.4, 0.6)
+            l = random.uniform(0.4, 0.6)
+        elif palette_type == "split_complementary":
+            if i == 0:
+                h = random.random()
+            else:
+                h = (h + 0.5 + (-1) ** i * 1 / 12) % 1  
+        elif palette_type == "square":
+            h = (h + 0.25) % 1   
+        elif palette_type == "rectangle":
+            h = (h + 0.25 + i % 2 * 0.25) % 1  
+        elif palette_type == "triadic":
+            h = (h + 1 / 3) % 1  
+
+
 
         color = hsl_to_rgb(h, s, l)
         draw.rectangle([i * 50, 0, (i + 1) * 50, 150], fill=tuple(color))
+        rgb_values.append(color)
 
-    return img
+    return img, rgb_values
 
 
 
@@ -76,30 +109,42 @@ def generate_palette(color_count, palette_type="random"):
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
-@slash.slash(name="generate_palette", 
+@slash.slash(name="colors", 
              description="Generate a color palette", 
              options=[
                  {
-                     "name": "color_count",
+                     "name": "quantity",
                      "description": "Number of colors in the palette",
                      "type": 4,  # 4 is TYPE_INTEGER
                      "required": False,
                      "choices": [{"name": str(i), "value": i} for i in range(1, 11)]
                  },
                  {
-                     "name": "palette_type",
+                     "name": "type",
                      "description": "Type of color palette",
                      "type": 3,  # 3 is TYPE_STRING
                      "required": False,
                      "choices": [{"name": "random", "value": "random"}, 
                                  {"name": "complementary", "value": "complementary"}, 
-                                 {"name": "monochromatic", "value": "monochromatic"}]
+                                 {"name": "monochromatic", "value": "monochromatic"},
+                                 {"name": "neon", "value": "neon"},
+                                 {"name": "pastel", "value": "pastel"},
+                                 {"name": "analogous", "value": "analogous"},
+                                 {"name": "split_complementary", "value": "split_complementary"},
+                                 {"name": "square", "value": "square"},
+                                 {"name": "rectangle", "value": "rectangle"},
+                                 {"name": "triadic", "value": "triadic"}
+                                ]
                  }
              ])
-async def _generate_palette(ctx: SlashContext, color_count: int = 5, palette_type: str = "random"):
-    img = generate_palette(color_count, palette_type)
+async def _generate_palette(ctx: SlashContext, quantity: int = 5, type: str = "random"):
+    img, rgb_values = generate_palette(quantity, type)
     img.save("palette.png")
-    await ctx.send(file=discord.File("palette.png"), content=f"Generated a {palette_type} palette with {color_count} colors!")
+    rgb_string = "\n".join([f"Color {i+1}: RGB({r}, {g}, {b})" for i, (r, g, b) in enumerate(rgb_values)])
+    
+    # Send the image and the RGB values
+    await ctx.send(file=discord.File("palette.png"), content=f"Generated a {type} palette with {quantity} colors!\n{rgb_string}")
+
 
 
 print("Running bot...")
