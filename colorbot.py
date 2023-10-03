@@ -6,6 +6,9 @@ from PIL import Image, ImageDraw
 import discord
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
+from sklearn.cluster import KMeans
+import numpy as np
+from io import BytesIO
 
 load_dotenv()
 
@@ -46,6 +49,29 @@ def hue2rgb(p, q, t):
 
 
 # Drawing and Palette Generation Function
+
+""" def generate_palette_from_image(image_bytes, color_count):
+    img = Image.open(BytesIO(image_bytes))
+    img = img.convert("RGB")
+    
+    # Resize for faster processing
+    img = img.resize((100, int((img.height / img.width) * 100)))
+    img_array = np.array(img).reshape(-1, 3)
+
+    kmeans = KMeans(n_clusters=color_count)
+    kmeans.fit(img_array)
+    centers = kmeans.cluster_centers_
+
+    palette_img = Image.new('RGB', (color_count * 50, 150), color='white')
+    draw = ImageDraw.Draw(palette_img)
+    rgb_values = []
+    for i, center in enumerate(centers):
+        color = tuple(map(int, center))
+        draw.rectangle([i * 50, 0, (i + 1) * 50, 150], fill=color)
+        rgb_values.append(color)
+
+    return palette_img, rgb_values
+    """
 
 
 def generate_palette(color_count, palette_type="random"):
@@ -102,6 +128,37 @@ def generate_palette(color_count, palette_type="random"):
 
     return img, rgb_values
 
+
+@bot.event
+async def on_message(message):
+    print("Message received")
+    print("Attachments: ", message.attachments)
+    print("Message Object: ", message)
+    # Ignore messages from the bot itself
+    if message.author == bot.user:
+        return
+    """
+    # Process image attachments
+    for attachment in message.attachments:
+        print("Attachment Filename: ", attachment.filename)
+        print("Attachment found")
+        if attachment.filename.endswith(('.png', '.jpg', '.jpeg')):  # Check if the attachment is an image
+            # Read the image bytes
+            image_bytes = await attachment.read()
+            
+            # Generate the color palette from the image
+            img, rgb_values = generate_palette_from_image(image_bytes, color_count=5)  # Default to 5 colors
+            img.save("image_palette.png")
+            
+            # Create a string with RGB values
+            rgb_string = "\n".join([f"Color {i+1}: RGB({r}, {g}, {b})" for i, (r, g, b) in enumerate(rgb_values)])
+            
+            # Send the image and the RGB values
+            await message.channel.send(file=discord.File("image_palette.png"), content=f"Generated a palette with 5 colors from the uploaded image!\n{rgb_string}")
+            
+            break  # Break after the first image is processed
+    
+    await bot.process_commands(message) """
 
 
 
